@@ -7,13 +7,14 @@ Creates the 4 developer accounts with password 'password12138' and a default USA
 import mysql.connector
 import hashlib
 import random
+import os
 
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'root',          # update if your MySQL password differs
-    'database': 'gonogo',
-    'port': 3306
+    'host': os.environ.get('DB_HOST', 'localhost'),
+    'user': os.environ.get('DB_USER', 'root'),
+    'password': os.environ.get('DB_PASS', ''),
+    'database': os.environ.get('DB_NAME', 'gonogo'),
+    'port': int(os.environ.get('DB_PORT', 3306))
 }
 
 DEVELOPERS = [
