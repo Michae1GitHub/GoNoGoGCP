@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoNoGo — Visa Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #2563eb; --blue-dark: #1d4ed8; --blue-light: #eff6ff;
+    --slate: #64748b; --slate-light: #f1f5f9; --border: #e2e8f0;
+    --text: #0f172a; --red: #dc2626; --green: #16a34a;
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--slate-light); color: var(--text); min-height: 100vh; display: flex; }
+
+  .left {
+    flex: 1; background: linear-gradient(145deg, #1e3a8a 0%, #2563eb 55%, #0ea5e9 100%);
+    display: flex; flex-direction: column; justify-content: center; padding: 64px;
+    position: relative; overflow: hidden;
+  }
+  .left::after {
+    content: ''; position: absolute; bottom: -80px; right: -80px;
+    width: 400px; height: 400px; border-radius: 50%;
+    background: rgba(255,255,255,0.05); pointer-events: none;
+  }
+  .left::before {
+    content: ''; position: absolute; top: -60px; left: -60px;
+    width: 300px; height: 300px; border-radius: 50%;
+    background: rgba(255,255,255,0.04); pointer-events: none;
+  }
+  .left-content { position: relative; z-index: 1; }
+  .logo { font-size: 3.8rem; font-weight: 800; color: white; letter-spacing: -2px; margin-bottom: 10px; }
+  .logo span { opacity: 0.6; }
+  .tagline { font-size: 1.05rem; color: rgba(255,255,255,0.78); line-height: 1.7; max-width: 360px; margin-bottom: 52px; }
+  .feature { display: flex; align-items: center; gap: 14px; color: rgba(255,255,255,0.88); margin-bottom: 18px; font-size: 0.9rem; }
+  .feat-icon { width: 34px; height: 34px; background: rgba(255,255,255,0.12); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  .right {
+    width: 500px; display: flex; flex-direction: column; justify-content: center;
+    padding: 60px 48px; background: white; overflow-y: auto;
+  }
+  .right-header { margin-bottom: 28px; }
+  .right-header h2 { font-size: 1.7rem; font-weight: 700; margin-bottom: 5px; }
+  .right-header p  { color: var(--slate); font-size: 0.9rem; }
+
+  .tabs { display: flex; gap: 0; background: var(--slate-light); border-radius: 10px; padding: 4px; margin-bottom: 28px; }
+  .tab  { flex: 1; padding: 9px 6px; text-align: center; border-radius: 7px; font-size: 0.82rem; font-weight: 500; cursor: pointer; color: var(--slate); transition: all 0.2s; border: none; background: none; font-family: inherit; }
+  .tab.active { background: white; color: var(--blue); box-shadow: 0 1px 6px rgba(0,0,0,0.1); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 0.74rem; font-weight: 600; color: var(--slate); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select { width: 100%; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.2s; background: white; color: var(--text); }
+  input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.09); }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; margin-top: 4px; }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .msg { padding: 11px 13px; border-radius: 8px; font-size: 0.85rem; margin-top: 12px; display: none; }
+  .msg.error   { background: #fef2f2; color: var(--red);   border: 1px solid #fecaca; display: block; }
+  .msg.success { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; display: block; }
+
+  .hint { font-size: 0.78rem; color: var(--slate); margin-top: 16px; text-align: center; line-height: 1.5; }
+  .hint code { background: var(--slate-light); padding: 1px 6px; border-radius: 4px; font-size: 0.78rem; color: var(--blue); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  .dev-box { background: #fefce8; border: 1px solid #fef08a; border-radius: 10px; padding: 16px; margin-bottom: 16px; font-size: 0.83rem; color: #713f12; line-height: 1.6; }
+  .dev-box strong { display: block; margin-bottom: 4px; }
+
+  @media (max-width: 900px) { .left { display: none; } .right { width: 100%; } }
+</style>
+</head>
+<body>
+
+<div class="left">
+  <div class="left-content">
+    <div class="logo">Go<span>NoGo</span></div>
+    <p class="tagline">Know before you go. Instant visa intelligence for every passport, every destination.</p>
+    <div class="feature"><div class="feat-icon">🌍</div>226 countries, 40,000+ visa routes</div>
+    <div class="feature"><div class="feat-icon">💰</div>Visa costs &amp; document requirements</div>
+    <div class="feature"><div class="feat-icon">✈️</div>Save and manage your trip plans</div>
+    <div class="feature"><div class="feat-icon">📊</div>Advanced travel analytics</div>
+  </div>
+</div>
+
+<div class="right">
+  <div class="right-header">
+    <h2>Welcome to GoNoGo</h2>
+    <p>Sign in or create an account to get started.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('signin')">Sign In</button>
+    <button class="tab"        onclick="switchTab('register')">Create Account</button>
+    <button class="tab"        onclick="switchTab('dev')">Developer</button>
+  </div>
+
+  <!-- ── Sign In ── -->
+  <div class="panel active" id="panel-signin">
+    <div class="form-group">
+      <label>User ID</label>
+      <input type="text" id="si-userid" placeholder="e.g. johnsmith42" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="si-password" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+    <div id="si-msg" class="msg"></div>
+  </div>
+
+  <!-- ── Create Account ── -->
+  <div class="panel" id="panel-register">
+    <div class="form-row-2">
+      <div class="form-group">
+        <label>User ID</label>
+        <input type="text" id="reg-userid" placeholder="e.g. johnsmith42">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="you@email.com">
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Min. 6 characters">
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="reg-confirm" placeholder="Re-enter password">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Your Passport Country</label>
+      <select id="reg-passport"><option value="">Loading countries...</option></select>
+    </div>
+    <button class="btn btn-primary" onclick="doRegister()">Create Account</button>
+    <div id="reg-msg" class="msg"></div>
+    <p class="hint">Your passport country is used for visa lookups and analytics. You can update it later in Settings.</p>
+  </div>
+
+  <!-- ── Developer ── -->
+  <div class="panel" id="panel-dev">
+    <div class="dev-box">
+      <strong>🔐 Developer Access</strong>
+      This portal is restricted to the 4 GoNoGo developers: <code>jenys2</code>, <code>johnw14</code>, <code>zhiyunl3</code>, <code>akshay11</code>.<br>
+      Developers have access to the Admin Panel for database management.
+    </div>
+    <div class="form-group">
+      <label>Developer ID</label>
+      <input type="text" id="dev-userid" placeholder="e.g. johnw14">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="dev-password" placeholder="Developer password" onkeydown="if(event.key==='Enter') doDevLogin()">
+    </div>
+    <button class="btn btn-primary" onclick="doDevLogin()">Developer Sign In</button>
+    <div id="dev-msg" class="msg"></div>
+  </div>
+</div>
+
+<script>
+const DEVELOPERS = new Set(['jenys2','johnw14','zhiyunl3','akshay11']);
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['signin','register','dev'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+async function loadCountries() {
+  try {
+    const res  = await fetch('/api/countries');
+    const data = await res.json();
+    document.getElementById('reg-passport').innerHTML =
+      '<option value="">— Select your passport country —</option>' +
+      data.map(c => `<option value="${c.country_id}">${c.country_name}</option>`).join('');
+  } catch(e) {}
+}
+
+function showMsg(id, text, isError) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = `msg ${isError ? 'error' : 'success'}`;
+}
+
+async function doLogin() {
+  const userId   = document.getElementById('si-userid').value.trim();
+  const password = document.getElementById('si-password').value;
+  if (!userId || !password) { showMsg('si-msg','Enter your User ID and password.',true); return; }
+  try {
+    const res  = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: userId, password}) });
+    const data = await res.json();
+    if (res.ok) { showMsg('si-msg','✅ Signing in...', false); window.location = data.redirect; }
+    else        { showMsg('si-msg', data.error, true); }
+  } catch(e) { showMsg('si-msg','Network error.', true); }
+}
+
+async function doRegister() {
+  const userId    = document.getElementById('reg-userid').value.trim();
+  const email     = document.getElementById('reg-email').value.trim();
+  const password  = document.getElementById('reg-password').value;
+  const confirm   = document.getElementById('reg-confirm').value;
+  const passport  = document.getElementById('reg-passport').value;
+  if (!userId || !email || !password || !passport) { showMsg('reg-msg','All fields are required.',true); return; }
+  if (password !== confirm) { showMsg('reg-msg','Passwords do not match.',true); return; }
+  if (password.length < 6)  { showMsg('reg-msg','Password must be at least 6 characters.',true); return; }
+  try {
+    const res  = await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id:userId, email, password, passport_country:passport}) });
+    const data = await res.json();
+    if (res.ok) { showMsg('reg-msg','✅ Account created! Redirecting...', false); window.location = data.redirect; }
+    else        { showMsg('reg-msg', data.error, true); }
+  } catch(e) { showMsg('reg-msg','Network error.', true); }
+}
+
+async function doDevLogin() {
+  const userId   = document.getElementById('dev-userid').value.trim();
+  const password = document.getElementById('dev-password').value;
+  if (!userId || !password) { showMsg('dev-msg','Enter your Developer ID and password.',true); return; }
+  if (!DEVELOPERS.has(userId)) { showMsg('dev-msg','This User ID is not a registered developer.',true); return; }
+  try {
+    const res  = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: userId, password}) });
+    const data = await res.json();
+    if (res.ok) { showMsg('dev-msg','✅ Signing in...', false); window.location = data.redirect; }
+    else        { showMsg('dev-msg', data.error, true); }
+  } catch(e) { showMsg('dev-msg','Network error.', true); }
+}
+
+loadCountries();
+</script>
+</body>
+</html>

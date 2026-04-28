@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoNoGo — Visa Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #2563eb; --blue-dark: #1d4ed8; --blue-light: #eff6ff;
+    --green: #16a34a; --orange: #ea580c; --red: #dc2626; --purple: #7c3aed;
+    --slate: #64748b; --slate-light: #f1f5f9; --border: #e2e8f0;
+    --white: #ffffff; --text: #0f172a; --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    --map-gray: #d1d5db;
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--slate-light); color: var(--text); }
+
+  nav { background: white; border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: center; height: 60px; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-size: 1.25rem; font-weight: 700; color: var(--blue); margin-right: 32px; text-decoration: none; }
+  .nav-links { display: flex; gap: 4px; flex: 1; }
+  .nav-link { padding: 7px 14px; border-radius: 8px; text-decoration: none; font-size: 0.875rem; font-weight: 500; color: var(--slate); transition: all 0.15s; }
+  .nav-link:hover { background: var(--slate-light); color: var(--text); }
+  .nav-link.active { background: var(--blue-light); color: var(--blue); }
+  .nav-user { font-size: 0.875rem; color: var(--slate); margin-left: auto; }
+  .nav-user strong { color: var(--text); }
+
+  .container { max-width: 1300px; margin: 0 auto; padding: 32px 24px; }
+  .page-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .page-sub { color: var(--slate); font-size: 0.9rem; margin-bottom: 24px; }
+
+  .layout { display: grid; grid-template-columns: 1fr 360px; gap: 22px; align-items: flex-start; }
+
+  /* Map card */
+  .map-card { background: white; border-radius: 14px; box-shadow: var(--shadow); border: 1px solid var(--border); padding: 18px 18px 14px; }
+  .map-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .map-title { font-size: 1.05rem; font-weight: 700; }
+  .passport-chip { font-size: 0.78rem; background: var(--blue-light); color: var(--blue); padding: 5px 12px; border-radius: 999px; font-weight: 600; }
+  .map-wrap { width: 100%; aspect-ratio: 2 / 1; background: var(--slate-light); border-radius: 10px; overflow: hidden; position: relative; }
+  .map-wrap svg { width: 100%; height: 100%; display: block; }
+  .country-path { stroke: #ffffff; stroke-width: 0.4; transition: opacity 0.15s; cursor: default; }
+  .country-path:hover { opacity: 0.78; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; font-size: 0.78rem; color: var(--slate); }
+  .legend span.dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: middle; border: 1px solid rgba(0,0,0,0.05); }
+  .dot-green  { background: var(--green); }
+  .dot-orange { background: var(--orange); }
+  .dot-blue   { background: var(--blue); }
+  .dot-red    { background: var(--red); }
+  .dot-gray   { background: var(--map-gray); }
+
+  /* Tooltip */
+  #tooltip { position: fixed; pointer-events: none; background: rgba(15,23,42,0.92); color: white; padding: 7px 10px; border-radius: 7px; font-size: 0.78rem; line-height: 1.35; opacity: 0; transition: opacity 0.12s; z-index: 500; max-width: 220px; }
+  #tooltip strong { display: block; margin-bottom: 2px; font-size: 0.82rem; }
+
+  /* Side panel */
+  .side { display: flex; flex-direction: column; gap: 16px; }
+  .query-card { background: white; border-radius: 14px; box-shadow: var(--shadow); border: 1px solid var(--border); padding: 16px 18px; }
+  .query-label { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+  .query-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+  .query-desc  { font-size: 0.78rem; color: var(--slate); line-height: 1.45; margin-bottom: 12px; }
+
+  .btn { width: 100%; padding: 9px 14px; border: none; border-radius: 9px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; color: white; }
+  .btn-blue   { background: var(--blue);   }   .btn-blue:hover   { background: var(--blue-dark); }
+  .btn-green  { background: var(--green);  }   .btn-green:hover  { background: #15803d; }
+  .btn-purple { background: var(--purple); }   .btn-purple:hover { background: #6d28d9; }
+
+  .results-box { background: white; border-radius: 14px; box-shadow: var(--shadow); border: 1px solid var(--border); padding: 16px 18px; }
+  .results-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+  .results-meta  { font-size: 0.75rem; color: var(--slate); margin-bottom: 10px; }
+  .results-list  { list-style: none; padding: 0; margin: 0; max-height: 360px; overflow-y: auto; }
+  .results-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 4px; border-bottom: 1px dashed var(--border); font-size: 0.85rem; }
+  .results-list li:last-child { border-bottom: none; }
+  .results-list .name { font-weight: 500; }
+  .results-list .meta { font-size: 0.72rem; color: var(--slate); }
+  .empty { color: var(--slate); font-size: 0.84rem; font-style: italic; }
+
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 600; }
+  .badge-green  { background: #dcfce7; color: #15803d; }
+  .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+  .badge-orange { background: #ffedd5; color: #c2410c; }
+  .badge-red    { background: #fee2e2; color: #b91c1c; }
+
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/dashboard">GoNoGo</a>
+  <div class="nav-links">
+    <a class="nav-link" href="/dashboard">Dashboard</a>
+    <a class="nav-link active" href="/analytics">Visa Map</a>
+    {% if is_developer %}<a class="nav-link" href="/admin">Admin</a>{% endif %}
+  </div>
+  <span class="nav-user">Signed in as <strong>{{ user_id }}</strong></span>
+</nav>
+
+<div class="container">
+  <div class="page-title">VISA MAP</div>
+  <div class="page-sub">Interactive global map colored by visa requirements for your passport country. Use the side panel to switch views.</div>
+
+  <div class="layout">
+
+    <!-- ─── MAP ─── -->
+    <div class="map-card">
+      <div class="map-header">
+        <div class="map-title" id="map-mode-title">World Map</div>
+        <div id="passport-chip" class="passport-chip">Loading passport…</div>
+      </div>
+      <div class="map-wrap">
+        <svg id="world-map" viewBox="0 0 960 480" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="legend" id="map-legend">
+        <span><span class="dot dot-gray"></span>No data / inactive</span>
+      </div>
+    </div>
+
+    <!-- ─── SIDE PANEL ─── -->
+    <div class="side">
+
+      <div class="query-card">
+        <div class="query-label" style="color:var(--blue);">Query 1 — Regional Accessibility</div>
+        <div class="query-title">Visa-Free Access by Region</div>
+        <div class="query-desc">Color every country by visa type for your passport (visa free / on arrival / e-visa / required).</div>
+        <button class="btn btn-blue" onclick="runRegional()">Run on Map</button>
+      </div>
+
+      <div class="query-card">
+        <div class="query-label" style="color:var(--green);">Query 2 — Visa Cost Analysis</div>
+        <div class="query-title">Budget-Friendly Destinations</div>
+        <div class="query-desc">Highlight 15 destinations where the visa cost is below the regional average.</div>
+        <button class="btn btn-green" onclick="runBudget()">Run on Map</button>
+      </div>
+
+      <div class="query-card">
+        <div class="query-label" style="color:var(--purple);">Query 3 — Complexity Score</div>
+        <div class="query-title">Most Complex Visa Routes</div>
+        <div class="query-desc">Highlight 15 hardest destinations to enter, scored on cost, stay length, and required documents.</div>
+        <button class="btn btn-purple" onclick="runComplexity()">Run on Map</button>
+      </div>
+
+      <div class="results-box" id="results-box">
+        <div class="results-title" id="results-title">Results</div>
+        <div class="results-meta"  id="results-meta">Pick a query to populate the map and the list.</div>
+        <ul class="results-list"   id="results-list"></ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<!-- d3 + topojson -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+
+<script>
+const NO_PASSPORT_MSG = 'No passport set on your account. Open the Dashboard → Settings to add one first.';
+
+// Color palette for map status
+const COLOR = {
+  visa_free:  '#16a34a',
+  on_arrival: '#ea580c',
+  e_visa:     '#2563eb',
+  required:   '#dc2626',
+  none:       '#d1d5db',     // gray (no data / inactive)
+  highlight_g:'#16a34a',
+  highlight_r:'#dc2626',
+  passport:   '#1e3a8a'      // deep navy for the user's own passport country
+};
+
+// Fallback static ISO 3166-1 numeric → alpha-3 lookup (used because the DB
+// seed CSV ships the iso_numeric column empty). The world-atlas TopoJSON we
+// load uses these numeric IDs.
+const ISO_NUM_TO_A3 = {
+  "004":"AFG","008":"ALB","010":"ATA","012":"DZA","016":"ASM","020":"AND","024":"AGO","028":"ATG","031":"AZE","032":"ARG",
+  "036":"AUS","040":"AUT","044":"BHS","048":"BHR","050":"BGD","051":"ARM","052":"BRB","056":"BEL","060":"BMU","064":"BTN",
+  "068":"BOL","070":"BIH","072":"BWA","074":"BVT","076":"BRA","084":"BLZ","086":"IOT","090":"SLB","092":"VGB","096":"BRN",
+  "100":"BGR","104":"MMR","108":"BDI","112":"BLR","116":"KHM","120":"CMR","124":"CAN","132":"CPV","136":"CYM","140":"CAF",
+  "144":"LKA","148":"TCD","152":"CHL","156":"CHN","158":"TWN","162":"CXR","166":"CCK","170":"COL","174":"COM","175":"MYT",
+  "178":"COG","180":"COD","184":"COK","188":"CRI","191":"HRV","192":"CUB","196":"CYP","203":"CZE","204":"BEN","208":"DNK",
+  "212":"DMA","214":"DOM","218":"ECU","222":"SLV","226":"GNQ","231":"ETH","232":"ERI","233":"EST","234":"FRO","238":"FLK",
+  "239":"SGS","242":"FJI","246":"FIN","248":"ALA","250":"FRA","254":"GUF","258":"PYF","260":"ATF","262":"DJI","266":"GAB",
+  "268":"GEO","270":"GMB","275":"PSE","276":"DEU","288":"GHA","292":"GIB","296":"KIR","300":"GRC","304":"GRL","308":"GRD",
+  "312":"GLP","316":"GUM","320":"GTM","324":"GIN","328":"GUY","332":"HTI","334":"HMD","336":"VAT","340":"HND","344":"HKG",
+  "348":"HUN","352":"ISL","356":"IND","360":"IDN","364":"IRN","368":"IRQ","372":"IRL","376":"ISR","380":"ITA","384":"CIV",
+  "388":"JAM","392":"JPN","398":"KAZ","400":"JOR","404":"KEN","408":"PRK","410":"KOR","414":"KWT","417":"KGZ","418":"LAO",
+  "422":"LBN","426":"LSO","428":"LVA","430":"LBR","434":"LBY","438":"LIE","440":"LTU","442":"LUX","446":"MAC","450":"MDG",
+  "454":"MWI","458":"MYS","462":"MDV","466":"MLI","470":"MLT","474":"MTQ","478":"MRT","480":"MUS","484":"MEX","492":"MCO",
+  "496":"MNG","498":"MDA","499":"MNE","500":"MSR","504":"MAR","508":"MOZ","512":"OMN","516":"NAM","520":"NRU","524":"NPL",
+  "528":"NLD","531":"CUW","533":"ABW","534":"SXM","535":"BES","540":"NCL","548":"VUT","554":"NZL","558":"NIC","562":"NER",
+  "566":"NGA","570":"NIU","574":"NFK","578":"NOR","580":"MNP","581":"UMI","583":"FSM","584":"MHL","585":"PLW","586":"PAK",
+  "591":"PAN","598":"PNG","600":"PRY","604":"PER","608":"PHL","612":"PCN","616":"POL","620":"PRT","624":"GNB","626":"TLS",
+  "630":"PRI","634":"QAT","638":"REU","642":"ROU","643":"RUS","646":"RWA","652":"BLM","654":"SHN","659":"KNA","660":"AIA",
+  "662":"LCA","663":"MAF","666":"SPM","670":"VCT","674":"SMR","678":"STP","682":"SAU","686":"SEN","688":"SRB","690":"SYC",
+  "694":"SLE","702":"SGP","703":"SVK","704":"VNM","705":"SVN","706":"SOM","710":"ZAF","716":"ZWE","724":"ESP","728":"SSD",
+  "729":"SDN","732":"ESH","740":"SUR","744":"SJM","748":"SWZ","752":"SWE","756":"CHE","760":"SYR","762":"TJK","764":"THA",
+  "768":"TGO","772":"TKL","776":"TON","780":"TTO","784":"ARE","788":"TUN","792":"TUR","795":"TKM","796":"TCA","798":"TUV",
+  "800":"UGA","804":"UKR","807":"MKD","818":"EGY","826":"GBR","831":"GGY","832":"JEY","833":"IMN","834":"TZA","840":"USA",
+  "850":"VIR","854":"BFA","858":"URY","860":"UZB","862":"VEN","876":"WLF","882":"WSM","887":"YEM","894":"ZMB"
+};
+// world-atlas uses bare numeric strings ("840") with no leading zeros; build
+// a parallel map without padding so both keying styles match.
+Object.keys(ISO_NUM_TO_A3).slice().forEach(k => {
+  const n = String(parseInt(k, 10));
+  if (n !== k) ISO_NUM_TO_A3[n] = ISO_NUM_TO_A3[k];
+});
+
+// State
+let MAP        = null;        // {countries, paths, idToA3}
+let VISA_DATA  = null;        // /api/analytics/visa-map response
+let CURRENT_VIEW = 'idle';    // idle | regional | budget | complexity
+
+// ── Render the world (gray) ────────────────────────────────────────────
+async function buildMap() {
+  const svg     = d3.select('#world-map');
+  const width   = 960, height = 480;
+  const proj    = d3.geoEqualEarth().scale(170).translate([width / 2, height / 2 + 10]);
+  const path    = d3.geoPath(proj);
+
+  const topo    = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json');
+  const features = topojson.feature(topo, topo.objects.countries).features;
+
+  // Sphere/ocean background
+  svg.append('path')
+     .attr('d', path({type:'Sphere'}))
+     .attr('fill', '#e0f2fe')
+     .attr('stroke', '#bae6fd')
+     .attr('stroke-width', 0.4);
+
+  const g = svg.append('g').attr('id', 'countries-layer');
+  const paths = g.selectAll('path')
+                 .data(features)
+                 .enter()
+                 .append('path')
+                 .attr('class', 'country-path')
+                 .attr('d', path)
+                 .attr('fill', COLOR.none)
+                 .attr('data-numeric', d => d.id)
+                 .attr('data-name', d => d.properties.name)
+                 .on('mousemove', (e, d) => showTip(e, d))
+                 .on('mouseleave', hideTip);
+
+  MAP = { features, paths };
+}
+
+// ── Load passport + visa map data ──────────────────────────────────────
+async function loadVisaData() {
+  const res  = await fetch('/api/analytics/visa-map');
+  const data = await res.json();
+  VISA_DATA  = data;
+
+  const chip = document.getElementById('passport-chip');
+  if (data.no_passport) {
+    chip.textContent = '⚠️ No passport set';
+    chip.style.background = '#fee2e2';
+    chip.style.color = '#b91c1c';
+  } else {
+    chip.textContent = `🛂 Passport: ${data.passport.country_name}`;
+  }
+
+  // Merge any DB-provided numeric mapping into the static fallback
+  if (data.iso_num_to_a3) {
+    Object.entries(data.iso_num_to_a3).forEach(([k, v]) => {
+      if (v) ISO_NUM_TO_A3[k] = v;
+    });
+  }
+
+  // Attach alpha-3 to each path now that we have the numeric→a3 map
+  if (MAP && MAP.paths) {
+    MAP.paths.attr('data-a3', function(){
+      const num = this.getAttribute('data-numeric');
+      return ISO_NUM_TO_A3[num] || ISO_NUM_TO_A3[String(parseInt(num, 10))] || '';
+    });
+  }
+}
+
+// ── Tooltip ────────────────────────────────────────────────────────────
+function showTip(e, d) {
+  const tip = document.getElementById('tooltip');
+  const a3  = ISO_NUM_TO_A3[d.id] || ISO_NUM_TO_A3[String(parseInt(d.id, 10))] || null;
+  const meta = (a3 && VISA_DATA.a3_to_meta && VISA_DATA.a3_to_meta[a3]) || null;
+  const name = (meta && meta.name) || d.properties.name;
+  const region = (meta && meta.region) || '';
+  let extra = '';
+
+  if (CURRENT_VIEW === 'regional' && a3 && VISA_DATA.statuses && VISA_DATA.statuses[a3]) {
+    const s = VISA_DATA.statuses[a3];
+    extra = `<div>${labelForStatus(s.status)}${s.max_stay_days ? ' · ' + s.max_stay_days + ' days' : ''}</div>`;
+  } else if (CURRENT_VIEW === 'budget' && a3 && _budgetMap && _budgetMap[a3]) {
+    extra = `<div>Cost: $${_budgetMap[a3].cost.toFixed(2)}</div>`;
+  } else if (CURRENT_VIEW === 'complexity' && a3 && _complexityMap && _complexityMap[a3]) {
+    extra = `<div>Complexity: ${_complexityMap[a3].score}</div>`;
+  } else if (CURRENT_VIEW === 'idle') {
+    extra = `<div style="color:#cbd5e1;">Pick a query →</div>`;
+  } else {
+    extra = `<div style="color:#cbd5e1;">No data</div>`;
+  }
+
+  tip.innerHTML = `<strong>${name}</strong>${region ? `<div style="color:#cbd5e1;">${region}</div>` : ''}${extra}`;
+  tip.style.left = (e.clientX + 14) + 'px';
+  tip.style.top  = (e.clientY + 14) + 'px';
+  tip.style.opacity = 1;
+}
+function hideTip() { document.getElementById('tooltip').style.opacity = 0; }
+
+function labelForStatus(s) {
+  return ({
+    visa_free:  '✅ Visa Free',
+    on_arrival: '🛬 Visa on Arrival',
+    e_visa:     '💻 e-Visa',
+    required:   '📋 Visa Required'
+  })[s] || '— No data';
+}
+
+// ── Recolor helpers ────────────────────────────────────────────────────
+function paintAllGray() {
+  if (!MAP) return;
+  MAP.paths.attr('fill', COLOR.none);
+}
+
+function paintPassport() {
+  if (!MAP || !VISA_DATA || !VISA_DATA.passport.country_id) return;
+  const own = VISA_DATA.passport.country_id;
+  MAP.paths.each(function() {
+    if (this.getAttribute('data-a3') === own) d3.select(this).attr('fill', COLOR.passport);
+  });
+}
+
+function setLegend(items) {
+  document.getElementById('map-legend').innerHTML = items.map(([cls, label]) =>
+    `<span><span class="dot ${cls}"></span>${label}</span>`).join('');
+}
+
+// ── View 1: Regional Accessibility ─────────────────────────────────────
+function runRegional() {
+  if (!MAP) return;
+  if (!VISA_DATA || VISA_DATA.no_passport) { showNoPassport(); return; }
+  CURRENT_VIEW = 'regional';
+  document.getElementById('map-mode-title').textContent = 'Visa-Free Access by Region';
+  setLegend([
+    ['dot-green',  'Visa Free'],
+    ['dot-orange', 'Visa on Arrival'],
+    ['dot-blue',   'e-Visa'],
+    ['dot-red',    'Visa Required'],
+    ['dot-gray',   'No data']
+  ]);
+
+  paintAllGray();
+  MAP.paths.attr('fill', function() {
+    const a3 = this.getAttribute('data-a3');
+    if (!a3) return COLOR.none;
+    const s = VISA_DATA.statuses[a3];
+    if (!s) return COLOR.none;
+    return COLOR[s.status] || COLOR.none;
+  });
+  paintPassport();
+
+  // Side list — group by status
+  const groups = {visa_free: [], on_arrival: [], e_visa: [], required: []};
+  Object.entries(VISA_DATA.statuses).forEach(([a3, s]) => {
+    if (groups[s.status]) groups[s.status].push({a3, name: s.name, region: s.region, max: s.max_stay_days});
+  });
+  for (const k of Object.keys(groups)) groups[k].sort((a,b) => a.name.localeCompare(b.name));
+
+  const total = Object.values(groups).reduce((sum, arr) => sum + arr.length, 0);
+  document.getElementById('results-title').textContent = 'Visa-Free Access by Region';
+  document.getElementById('results-meta').innerHTML =
+    `${total} destinations · <span class="badge badge-green">${groups.visa_free.length} free</span> ` +
+    `<span class="badge badge-orange">${groups.on_arrival.length} arrival</span> ` +
+    `<span class="badge badge-blue">${groups.e_visa.length} e-visa</span> ` +
+    `<span class="badge badge-red">${groups.required.length} required</span>`;
+
+  const order = [['visa_free','badge-green','Visa Free'],
+                 ['on_arrival','badge-orange','On Arrival'],
+                 ['e_visa','badge-blue','e-Visa'],
+                 ['required','badge-red','Required']];
+  const list = document.getElementById('results-list');
+  list.innerHTML = order.flatMap(([key, cls, label]) =>
+    groups[key].slice(0, 30).map(c =>
+      `<li><span class="name">${c.name}</span><span class="badge ${cls}">${label}${c.max ? ' · ' + c.max + 'd' : ''}</span></li>`
+    )
+  ).join('') || '<li class="empty">No visa data found.</li>';
+}
+
+// ── View 2: Budget-Friendly Destinations ───────────────────────────────
+let _budgetMap = null;
+async function runBudget() {
+  if (!MAP) return;
+  CURRENT_VIEW = 'budget';
+  document.getElementById('map-mode-title').textContent = 'Budget-Friendly Destinations';
+  setLegend([
+    ['dot-green', 'Cheaper than regional avg'],
+    ['dot-gray',  'Other / no data']
+  ]);
+
+  document.getElementById('results-title').textContent = 'Budget-Friendly Destinations';
+  document.getElementById('results-meta').textContent  = 'Loading…';
+  document.getElementById('results-list').innerHTML    = '';
+
+  const res  = await fetch('/api/analytics/budget');
+  const data = await res.json();
+  if (!res.ok)         { setError(data.error); return; }
+  if (data.no_passport){ showNoPassport(); return; }
+  const rows = data.results || [];
+
+  _budgetMap = {};
+  rows.forEach(r => { if (r.country_id) _budgetMap[r.country_id] = { cost: parseFloat(r.cost_amount) || 0, region: r.region_name }; });
+
+  paintAllGray();
+  MAP.paths.attr('fill', function() {
+    const a3 = this.getAttribute('data-a3');
+    return (a3 && _budgetMap[a3]) ? COLOR.highlight_g : COLOR.none;
+  });
+  paintPassport();
+
+  document.getElementById('results-meta').innerHTML =
+    `${rows.length} result(s) — destinations cheaper than their regional average`;
+  document.getElementById('results-list').innerHTML = rows.length
+    ? rows.map(r => `
+        <li>
+          <span class="name">${r.destination}</span>
+          <span class="meta">${r.region_name} · <strong style="color:var(--green);">$${parseFloat(r.cost_amount).toFixed(2)}</strong></span>
+        </li>`).join('')
+    : '<li class="empty">No matching cost data for your passport.</li>';
+}
+
+// ── View 3: Most Complex Visa Routes ───────────────────────────────────
+let _complexityMap = null;
+async function runComplexity() {
+  if (!MAP) return;
+  CURRENT_VIEW = 'complexity';
+  document.getElementById('map-mode-title').textContent = 'Most Complex Visa Routes';
+  setLegend([
+    ['dot-red',  'Top 15 hardest'],
+    ['dot-gray', 'Other / no data']
+  ]);
+
+  document.getElementById('results-title').textContent = 'Most Complex Visa Routes';
+  document.getElementById('results-meta').textContent  = 'Loading…';
+  document.getElementById('results-list').innerHTML    = '';
+
+  const res  = await fetch('/api/analytics/complexity');
+  const data = await res.json();
+  if (!res.ok)         { setError(data.error); return; }
+  if (data.no_passport){ showNoPassport(); return; }
+  const rows = data.results || [];
+
+  _complexityMap = {};
+  rows.forEach(r => { if (r.country_id) _complexityMap[r.country_id] = { score: r.complexity_score, region: r.region_name }; });
+
+  paintAllGray();
+  MAP.paths.attr('fill', function() {
+    const a3 = this.getAttribute('data-a3');
+    return (a3 && _complexityMap[a3]) ? COLOR.highlight_r : COLOR.none;
+  });
+  paintPassport();
+
+  const badge = score => {
+    if (score <= 30) return `<span class="badge badge-green">${score}</span>`;
+    if (score <= 60) return `<span class="badge badge-orange">${score}</span>`;
+    return             `<span class="badge badge-red">${score}</span>`;
+  };
+
+  document.getElementById('results-meta').innerHTML =
+    `${rows.length} result(s) — top hardest destinations from passport <code>${data.passport_number}</code>`;
+  document.getElementById('results-list').innerHTML = rows.length
+    ? rows.map(r => `
+        <li>
+          <span class="name">${r.destination}</span>
+          <span class="meta">${r.region_name} · ${badge(r.complexity_score)}</span>
+        </li>`).join('')
+    : '<li class="empty">No complexity results.</li>';
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────
+function showNoPassport() {
+  paintAllGray();
+  document.getElementById('results-title').textContent = 'No passport on file';
+  document.getElementById('results-meta').innerHTML    = `<span class="empty">${NO_PASSPORT_MSG}</span>`;
+  document.getElementById('results-list').innerHTML    = '';
+}
+function setError(msg) {
+  document.getElementById('results-meta').innerHTML = `<span class="empty">⚠️ ${msg}</span>`;
+}
+
+// ── Init ───────────────────────────────────────────────────────────────
+(async () => {
+  await buildMap();
+  await loadVisaData();
+  // Map starts entirely gray; user has to click a query button.
+  paintAllGray();
+  paintPassport();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoNoGo — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #2563eb; --blue-dark: #1d4ed8; --blue-light: #eff6ff;
+    --sky: #0ea5e9; --green: #16a34a; --orange: #ea580c; --red: #dc2626;
+    --slate: #64748b; --slate-light: #f1f5f9; --border: #e2e8f0;
+    --white: #ffffff; --text: #0f172a; --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--slate-light); color: var(--text); }
+
+  /* Nav */
+  nav { background: white; border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: center; height: 60px; gap: 0; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-size: 1.25rem; font-weight: 700; color: var(--blue); margin-right: 32px; text-decoration: none; }
+  .nav-links { display: flex; gap: 4px; flex: 1; }
+  .nav-link { padding: 7px 14px; border-radius: 8px; text-decoration: none; font-size: 0.875rem; font-weight: 500; color: var(--slate); transition: all 0.15s; }
+  .nav-link:hover { background: var(--slate-light); color: var(--text); }
+  .nav-link.active { background: var(--blue-light); color: var(--blue); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .nav-user { font-size: 0.875rem; color: var(--slate); }
+  .nav-user strong { color: var(--text); }
+  .btn-logout { padding: 6px 14px; border: 1.5px solid var(--border); border-radius: 8px; background: none; font-size: 0.8rem; font-weight: 500; cursor: pointer; color: var(--slate); font-family: inherit; transition: all 0.15s; }
+  .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+  /* Settings */
+  .passport-bar { display: flex; align-items: center; gap: 10px; background: var(--blue-light); border: 1px solid #bfdbfe; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.875rem; }
+  .passport-bar .pp-label { color: var(--slate); }
+  .passport-bar .pp-val { font-weight: 600; color: var(--blue); flex: 1; }
+  .passport-bar select { padding: 5px 8px; border-radius: 7px; border: 1.5px solid var(--border); font-size: 0.85rem; font-family: inherit; display: none; flex: 1; }
+  .passport-bar .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+
+  /* Layout */
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+  .page-sub { color: var(--slate); font-size: 0.9rem; margin-bottom: 28px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* Cards */
+  .card { background: white; border-radius: 14px; padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-title .icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; }
+  .icon-blue { background: var(--blue-light); }
+  .icon-green { background: #f0fdf4; }
+
+  /* Form */
+  .form-row { display: flex; gap: 10px; align-items: flex-end; }
+  .form-group { flex: 1; }
+  .form-group label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--slate); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  select, input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.2s; background: white; }
+  select:focus, input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+
+  .btn { padding: 10px 20px; border: none; border-radius: 9px; font-size: 0.875rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-danger { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+  .btn-danger:hover { background: #fee2e2; }
+  .btn-success { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+  .btn-success:hover { background: #dcfce7; }
+  .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+  /* Visa result */
+  .result-card { background: var(--slate-light); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-top: 14px; display: none; }
+  .result-card.show { display: block; }
+  .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .result-route { font-weight: 600; font-size: 1rem; }
+  .result-route .arrow { color: var(--slate); margin: 0 6px; }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+  .badge-green  { background: #dcfce7; color: #15803d; }
+  .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+  .badge-orange { background: #ffedd5; color: #c2410c; }
+  .badge-red    { background: #fee2e2; color: #b91c1c; }
+
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .result-item .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--slate); font-weight: 600; margin-bottom: 2px; }
+  .result-item .val { font-size: 0.95rem; font-weight: 500; }
+
+  .docs-section { border-top: 1px solid var(--border); padding-top: 12px; }
+  .docs-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--slate); margin-bottom: 8px; }
+  .doc-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+  .doc-item:last-child { border-bottom: none; }
+  .doc-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; margin-top: 1px; }
+  .doc-badge.mandatory { background: #fee2e2; color: #b91c1c; }
+  .doc-badge.optional  { background: #f1f5f9; color: var(--slate); }
+  .doc-name { font-weight: 500; }
+  .doc-note { color: var(--slate); font-size: 0.8rem; margin-top: 1px; }
+  .no-docs  { color: var(--slate); font-size: 0.875rem; font-style: italic; }
+
+  .save-row { display: flex; justify-content: flex-end; margin-top: 12px; }
+
+  /* Trips table */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--slate); }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .empty-state p { font-size: 0.9rem; }
+
+  .trip-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; }
+  .trip-card:hover { border-color: var(--blue); background: var(--blue-light); }
+  .trip-dest { flex: 1; }
+  .trip-dest .country { font-weight: 600; font-size: 0.95rem; }
+  .trip-dest .meta { font-size: 0.8rem; color: var(--slate); margin-top: 2px; }
+  .trip-dates { font-size: 0.8rem; color: var(--slate); text-align: right; }
+
+  /* Modal */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: none; align-items: center; justify-content: center; }
+  .overlay.show { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 28px; width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; }
+  .modal .form-group { margin-bottom: 14px; }
+  .modal-btns { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+  .msg-inline { padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-top: 10px; display: none; }
+  .msg-inline.error   { background: #fef2f2; color: #dc2626; display: block; }
+  .msg-inline.success { background: #f0fdf4; color: #16a34a; display: block; }
+
+  @media (max-width: 768px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .form-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/dashboard">GoNoGo</a>
+  <div class="nav-links">
+    <a class="nav-link active" href="/dashboard">Dashboard</a>
+    <a class="nav-link" href="/analytics">Visa Map</a>
+    {% if is_developer %}<a class="nav-link" href="/admin">Admin</a>{% endif %}
+  </div>
+  <div class="nav-right">
+    <span class="nav-user">Signed in as <strong>{{ user_id }}</strong></span>
+    <button class="btn-logout" onclick="logout()">Sign out</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-title">Welcome back, {{ user_id }}</div>
+  <div class="page-sub">Look up visa requirements and manage your saved trips.</div>
+
+  <!-- Passport bar -->
+  <div class="passport-bar" id="passport-bar">
+    <span>🛂</span>
+    <span class="pp-label">Your passport:</span>
+    <span class="pp-val" id="pp-display">Loading...</span>
+    <select id="pp-select"></select>
+    <button class="btn btn-primary btn-sm" id="pp-edit-btn"   onclick="startPassportEdit()">Edit</button>
+    <button class="btn btn-primary btn-sm" id="pp-save-btn"   onclick="savePassport()" style="display:none;">Save</button>
+    <button class="btn btn-secondary btn-sm" id="pp-cancel-btn" onclick="cancelPassportEdit()" style="display:none;">Cancel</button>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- Country Keyword Search -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-title"><div class="icon icon-blue">🔎</div>Country Keyword Search</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Search by country name, region, or ISO code</label>
+          <input type="text" id="country-search" placeholder='Try "japan", "asia", "USA"…'
+                 oninput="searchCountries()">
+        </div>
+      </div>
+      <div id="country-search-results" style="margin-top:10px;font-size:0.875rem;color:var(--slate);">
+        Type at least 2 characters to search.
+      </div>
+    </div>
+
+    <!-- Visa Lookup -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-title"><div class="icon icon-blue">🔍</div>Visa Requirement Lookup</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Your Passport Country</label>
+          <select id="origin-country"><option value="">Loading...</option></select>
+        </div>
+        <div class="form-group">
+          <label>Destination Country</label>
+          <select id="dest-country"><option value="">Loading...</option></select>
+        </div>
+        <button class="btn btn-primary" onclick="lookupVisa()">Search</button>
+      </div>
+
+      <div id="visa-result" class="result-card">
+        <div class="result-header">
+          <div class="result-route" id="result-route"></div>
+          <div id="result-badge"></div>
+        </div>
+        <div class="result-grid" id="result-grid"></div>
+        <div class="docs-section">
+          <div class="docs-title">Required Documents</div>
+          <div id="result-docs"></div>
+        </div>
+        <div class="save-row">
+          <button class="btn btn-success btn-sm" id="save-trip-btn" onclick="openSaveModal()" style="display:none;">＋ Save this Trip</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Trips -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-title"><div class="icon icon-green">✈️</div>My Saved Trips</div>
+      <div id="trips-list"><div class="empty-state"><div class="icon">🗺️</div><p>Loading your trips...</p></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Save Trip Modal -->
+<div class="overlay" id="save-modal">
+  <div class="modal">
+    <h3>Save Trip Plan</h3>
+    <div class="form-group">
+      <label>Passport</label>
+      <select id="modal-passport"><option value="">Loading...</option></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Entry Date</label>
+        <input type="date" id="modal-entry">
+      </div>
+      <div class="form-group">
+        <label>Exit Date</label>
+        <input type="date" id="modal-exit">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Purpose</label>
+      <select id="modal-purpose">
+        <option value="tourism">Tourism</option>
+        <option value="business">Business</option>
+        <option value="study">Study</option>
+        <option value="family">Family Visit</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div id="modal-msg" class="msg-inline"></div>
+    <div class="modal-btns">
+      <button class="btn" style="background:var(--slate-light);color:var(--text);" onclick="closeSaveModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTrip()">Save Trip</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentVisa = null;
+
+// ── Auth ──────────────────────────────────────────────────────────────
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location = '/';
+}
+
+// ── Countries ─────────────────────────────────────────────────────────
+async function loadCountries() {
+  const res  = await fetch('/api/countries');
+  const data = await res.json();
+  const html = '<option value="">— Select —</option>' +
+    data.map(c => `<option value="${c.country_id}">${c.country_name}</option>`).join('');
+  document.getElementById('origin-country').innerHTML = html;
+  document.getElementById('dest-country').innerHTML   = html;
+}
+
+// ── Visa Lookup ───────────────────────────────────────────────────────
+async function lookupVisa() {
+  const origin = document.getElementById('origin-country').value;
+  const dest   = document.getElementById('dest-country').value;
+  if (!origin || !dest) { alert('Please select both countries.'); return; }
+  if (origin === dest)   { alert('Origin and destination must be different.'); return; }
+
+  const res  = await fetch(`/api/visa?origin=${origin}&destination=${dest}`);
+  const data = await res.json();
+  const box  = document.getElementById('visa-result');
+  box.classList.add('show');
+
+  if (!res.ok) {
+    document.getElementById('result-route').textContent = 'No data found';
+    document.getElementById('result-badge').innerHTML   = '';
+    document.getElementById('result-grid').innerHTML    = `<p style="color:var(--red);font-size:.875rem;">${data.error}</p>`;
+    document.getElementById('result-docs').innerHTML    = '';
+    document.getElementById('save-trip-btn').style.display = 'none';
+    currentVisa = null;
+    return;
+  }
+
+  currentVisa = data;
+
+  // Route
+  document.getElementById('result-route').innerHTML =
+    `${data.origin_country}<span class="arrow">→</span>${data.destination_country}`;
+
+  // Badge
+  let badge = '';
+  if (data.max_stay_days)     badge = `<span class="badge badge-green">✅ Visa Free — ${data.max_stay_days} days</span>`;
+  else if (data.visa_on_arrival) badge = `<span class="badge badge-orange">🛬 Visa on Arrival</span>`;
+  else if (data.is_evisa)     badge = `<span class="badge badge-blue">💻 e-Visa Required</span>`;
+  else                        badge = `<span class="badge badge-red">📋 Visa Required</span>`;
+  document.getElementById('result-badge').innerHTML = badge;
+
+  // Grid — visa-free routes never carry a fee
+  let cost;
+  if (data.is_free || data.max_stay_days) {
+    cost = '<span style="color:var(--green);font-weight:600;">Free — no fee</span>';
+  } else if (data.cost_amount) {
+    cost = `$${parseFloat(data.cost_amount).toFixed(2)} ${data.currency_code || 'USD'}`;
+  } else {
+    cost = 'Not available';
+  }
+  document.getElementById('result-grid').innerHTML = `
+    <div class="result-item"><div class="lbl">Max Stay</div><div class="val">${data.max_stay_days ? data.max_stay_days + ' days' : '—'}</div></div>
+    <div class="result-item"><div class="lbl">Estimated Cost</div><div class="val">${cost}</div></div>
+    <div class="result-item"><div class="lbl">e-Visa</div><div class="val">${data.is_evisa ? 'Yes' : 'No'}</div></div>
+    <div class="result-item"><div class="lbl">Visa on Arrival</div><div class="val">${data.visa_on_arrival ? 'Yes' : 'No'}</div></div>
+  `;
+
+  // Documents
+  if (data.documents && data.documents.length > 0) {
+    document.getElementById('result-docs').innerHTML = data.documents.map(d => `
+      <div class="doc-item">
+        <span class="doc-badge ${d.is_mandatory ? 'mandatory' : 'optional'}">${d.is_mandatory ? 'Required' : 'Optional'}</span>
+        <div><div class="doc-name">${d.doc_name}</div>${d.notes ? `<div class="doc-note">${d.notes}</div>` : ''}</div>
+      </div>`).join('');
+  } else {
+    document.getElementById('result-docs').innerHTML =
+      '<p class="no-docs">No document requirements on file for this route.</p>';
+  }
+
+  document.getElementById('save-trip-btn').style.display = 'inline-flex';
+}
+
+// ── Save Trip Modal ───────────────────────────────────────────────────
+async function openSaveModal() {
+  document.getElementById('save-modal').classList.add('show');
+  document.getElementById('modal-msg').className = 'msg-inline';
+  const res  = await fetch('/api/passports');
+  const data = await res.json();
+  if (data.length === 0) {
+    document.getElementById('modal-passport').innerHTML = '<option value="">No passports on file</option>';
+  } else {
+    document.getElementById('modal-passport').innerHTML =
+      data.map(p => `<option value="${p.passport_number}">${p.passport_number} — ${p.issuing_country}</option>`).join('');
+  }
+}
+
+function closeSaveModal() {
+  document.getElementById('save-modal').classList.remove('show');
+}
+
+async function saveTrip() {
+  const passport = document.getElementById('modal-passport').value;
+  const entry    = document.getElementById('modal-entry').value;
+  const exit_    = document.getElementById('modal-exit').value;
+  const purpose  = document.getElementById('modal-purpose').value;
+  const msg      = document.getElementById('modal-msg');
+
+  if (!passport)   { msg.textContent = 'Please select a passport.'; msg.className = 'msg-inline error'; return; }
+  if (!currentVisa) return;
+
+  const res = await fetch('/api/trips', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      passport_number:        passport,
+      destination_country_id: currentVisa.destination_id,
+      visa_req_id:            currentVisa.visa_req_id,
+      entry_date:             entry || null,
+      exit_date:              exit_ || null,
+      purpose
+    })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    msg.textContent = '✅ Trip saved!'; msg.className = 'msg-inline success';
+    setTimeout(() => { closeSaveModal(); loadTrips(); }, 1000);
+  } else {
+    msg.textContent = data.error; msg.className = 'msg-inline error';
+  }
+}
+
+// ── Trips List ────────────────────────────────────────────────────────
+async function loadTrips() {
+  const res   = await fetch('/api/trips');
+  const trips = await res.json();
+  const el    = document.getElementById('trips-list');
+
+  if (!trips.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">🗺️</div><p>No trips saved yet. Search for a destination above and click <strong>Save this Trip</strong>.</p></div>`;
+    return;
+  }
+
+  const statusBadge = t => {
+    if (t.max_stay_days)     return `<span class="badge badge-green" style="font-size:.7rem;">Visa Free</span>`;
+    if (t.visa_on_arrival)   return `<span class="badge badge-orange" style="font-size:.7rem;">Visa on Arrival</span>`;
+    if (t.is_evisa)          return `<span class="badge badge-blue" style="font-size:.7rem;">e-Visa</span>`;
+    return `<span class="badge badge-red" style="font-size:.7rem;">Visa Required</span>`;
+  };
+
+  el.innerHTML = trips.map(t => `
+    <div class="trip-card">
+      <div style="font-size:1.5rem;">✈️</div>
+      <div class="trip-dest">
+        <div class="country">${t.destination} ${statusBadge(t)}</div>
+        <div class="meta">From: ${t.passport_country} &nbsp;·&nbsp; Purpose: ${t.purpose || '—'}</div>
+      </div>
+      <div class="trip-dates">
+        ${t.entry_date ? `<div>${t.entry_date}</div><div style="color:var(--border)">↕</div><div>${t.exit_date || '?'}</div>` : '<div style="color:var(--slate);">Dates TBD</div>'}
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteTrip(${t.plan_id})">Remove</button>
+    </div>`).join('');
+}
+
+async function deleteTrip(id) {
+  if (!confirm('Remove this trip?')) return;
+  const res = await fetch(`/api/trips/${id}`, { method: 'DELETE' });
+  if (res.ok) loadTrips();
+}
+
+// ── Passport Settings ─────────────────────────────────────────────────
+let allCountries = [];
+
+async function loadPassportBar() {
+  const res  = await fetch('/api/me');
+  const data = await res.json();
+  const display = document.getElementById('pp-display');
+  if (data.passport && data.passport.passport_country) {
+    display.textContent = data.passport.passport_country;
+    display.dataset.countryId = data.passport.country_id;
+  } else {
+    display.textContent = 'Not set — click Edit to add your passport';
+    display.style.color = 'var(--red)';
+  }
+}
+
+async function startPassportEdit() {
+  if (!allCountries.length) {
+    const res  = await fetch('/api/countries');
+    allCountries = await res.json();
+  }
+  const sel = document.getElementById('pp-select');
+  const currentId = document.getElementById('pp-display').dataset.countryId || '';
+  sel.innerHTML = allCountries.map(c =>
+    `<option value="${c.country_id}" ${c.country_id === currentId ? 'selected' : ''}>${c.country_name}</option>`
+  ).join('');
+  document.getElementById('pp-display').style.display   = 'none';
+  document.getElementById('pp-select').style.display    = 'block';
+  document.getElementById('pp-edit-btn').style.display  = 'none';
+  document.getElementById('pp-save-btn').style.display  = 'inline-flex';
+  document.getElementById('pp-cancel-btn').style.display = 'inline-flex';
+}
+
+function cancelPassportEdit() {
+  document.getElementById('pp-display').style.display    = 'inline';
+  document.getElementById('pp-select').style.display     = 'none';
+  document.getElementById('pp-edit-btn').style.display   = 'inline-flex';
+  document.getElementById('pp-save-btn').style.display   = 'none';
+  document.getElementById('pp-cancel-btn').style.display = 'none';
+}
+
+async function savePassport() {
+  const countryId = document.getElementById('pp-select').value;
+  const res  = await fetch('/api/me/passport', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({passport_country: countryId}) });
+  const data = await res.json();
+  if (res.ok) {
+    cancelPassportEdit();
+    loadPassportBar();
+  } else {
+    alert(data.error);
+  }
+}
+
+// ── Country Keyword Search ────────────────────────────────────────────
+let _searchTimer = null;
+function searchCountries() {
+  clearTimeout(_searchTimer);
+  const q   = document.getElementById('country-search').value.trim();
+  const out = document.getElementById('country-search-results');
+  if (q.length < 2) { out.innerHTML = 'Type at least 2 characters to search.'; return; }
+  out.innerHTML = '<em>Searching…</em>';
+  _searchTimer = setTimeout(async () => {
+    const res  = await fetch(`/api/search/countries?q=${encodeURIComponent(q)}`);
+    const rows = await res.json();
+    if (!rows.length) { out.innerHTML = 'No countries match that keyword.'; return; }
+    out.innerHTML = `<div style="margin-bottom:6px;color:var(--slate);">${rows.length} result(s)</div>` +
+      `<div style="display:flex;flex-wrap:wrap;gap:6px;">` +
+      rows.map(r => `
+        <button class="btn btn-secondary btn-sm" style="background:var(--blue-light);color:var(--blue);border:none;"
+                onclick="useCountryAsDestination('${r.country_id}')">
+          ${r.country_name} <span style="opacity:.6;font-weight:400;margin-left:4px;">${r.region_name || ''}</span>
+        </button>`).join('') + `</div>`;
+  }, 200);
+}
+
+function useCountryAsDestination(countryId) {
+  const dest = document.getElementById('dest-country');
+  dest.value = countryId;
+  dest.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+loadCountries();
+loadTrips();
+loadPassportBar();
+</script>
+</body>
+</html>

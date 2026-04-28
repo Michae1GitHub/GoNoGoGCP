@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoNoGo — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #2563eb; --blue-dark: #1d4ed8; --blue-light: #eff6ff;
+    --red: #dc2626; --green: #16a34a;
+    --slate: #64748b; --slate-light: #f1f5f9; --border: #e2e8f0;
+    --white: #ffffff; --text: #0f172a; --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--slate-light); color: var(--text); }
+
+  nav { background: white; border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: center; height: 60px; gap: 0; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-size: 1.25rem; font-weight: 700; color: var(--blue); margin-right: 32px; text-decoration: none; }
+  .nav-links { display: flex; gap: 4px; flex: 1; }
+  .nav-link { padding: 7px 14px; border-radius: 8px; text-decoration: none; font-size: 0.875rem; font-weight: 500; color: var(--slate); transition: all 0.15s; }
+  .nav-link:hover { background: var(--slate-light); color: var(--text); }
+  .nav-link.active { background: var(--blue-light); color: var(--blue); }
+  .admin-badge { background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+
+  .container { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+  .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+  .page-sub { color: var(--slate); font-size: 0.9rem; margin-bottom: 28px; }
+
+  .card { background: white; border-radius: 14px; padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 20px; }
+  .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+
+  .form-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .form-group { flex: 1; min-width: 160px; }
+  .form-group label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--slate); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
+  input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+
+  .btn { padding: 10px 20px; border: none; border-radius: 9px; font-size: 0.875rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .btn-primary  { background: var(--blue); color: white; }
+  .btn-primary:hover  { background: var(--blue-dark); }
+  .btn-danger   { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+  .btn-danger:hover   { background: #fee2e2; }
+  .btn-save     { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+  .btn-save:hover     { background: #dcfce7; }
+  .btn-secondary { background: var(--slate-light); color: var(--text); border: 1px solid var(--border); }
+  .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+
+  .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+  .search-bar input { flex: 1; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead th { text-align: left; padding: 10px 14px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--slate); background: var(--slate-light); border-bottom: 1px solid var(--border); }
+  tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--slate-light); }
+
+  .editable-email { display: flex; align-items: center; gap: 6px; }
+  .editable-email span { flex: 1; }
+  .editable-email input { display: none; flex: 1; padding: 5px 8px; font-size: 0.875rem; border-radius: 6px; }
+
+  .msg { padding: 11px 14px; border-radius: 8px; font-size: 0.85rem; margin-top: 10px; display: none; }
+  .msg.error   { background: #fef2f2; color: #dc2626; display: block; }
+  .msg.success { background: #f0fdf4; color: #16a34a; display: block; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">GoNoGo</a>
+  <div class="nav-links">
+    {% if user_id %}
+    <a class="nav-link" href="/dashboard">Dashboard</a>
+    <a class="nav-link" href="/analytics">Visa Map</a>
+    {% endif %}
+    <a class="nav-link active" href="/admin">Admin</a>
+  </div>
+  <div style="margin-left:auto;"><span class="admin-badge">⚙️ Admin Panel</span></div>
+</nav>
+
+<div class="container">
+  <div class="page-title">Admin Panel</div>
+  <div class="page-sub">Manage users and edit visa-route data.</div>
+
+  <!-- Create User -->
+  <div class="card">
+    <div class="card-title">➕ Create New User</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>User ID</label>
+        <input type="text" id="new-user-id" placeholder="e.g. johnsmith42">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="new-email" placeholder="john@example.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="new-password" placeholder="password">
+      </div>
+      <button class="btn btn-primary" onclick="createUser()">Create</button>
+    </div>
+    <div id="create-msg" class="msg"></div>
+  </div>
+
+  <!-- Search & List Users -->
+  <div class="card">
+    <div class="card-title">👥 Users</div>
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="Search by user ID or email..." onkeydown="if(event.key==='Enter') searchUsers()">
+      <button class="btn btn-primary" onclick="searchUsers()">Search</button>
+      <button class="btn btn-secondary" onclick="clearSearch()">Show All</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Email</th>
+          <th>Created</th>
+          <th style="width:180px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="users-tbody">
+        <tr><td colspan="4" style="text-align:center;color:var(--slate);padding:32px;">Click "Show All" to load users</td></tr>
+      </tbody>
+    </table>
+    <div id="action-msg" class="msg"></div>
+  </div>
+
+  <!-- ─── Visa Route Editor ─────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">🛂 Visa Route Editor</div>
+    <div class="form-row" style="align-items:flex-end;">
+      <div class="form-group">
+        <label>Origin (passport country)</label>
+        <select id="route-origin"><option value="">Loading…</option></select>
+      </div>
+      <div class="form-group">
+        <label>Destination</label>
+        <select id="route-destination"><option value="">Loading…</option></select>
+      </div>
+      <button class="btn btn-primary" onclick="loadRoute()">Look up</button>
+    </div>
+
+    <div id="route-status" style="margin-top:10px;font-size:0.85rem;color:var(--slate);">
+      Pick an origin and destination, then click <em>Look up</em>.
+    </div>
+
+    <div id="route-editor" style="display:none;margin-top:18px;border-top:1px solid var(--border);padding-top:18px;">
+      <div style="font-size:0.95rem;font-weight:600;margin-bottom:14px;" id="route-heading"></div>
+
+      <div class="form-row" style="margin-bottom:12px;">
+        <div class="form-group">
+          <label>Visa Type</label>
+          <select id="route-type">
+            <option value="visa_free">Visa Free</option>
+            <option value="on_arrival">Visa on Arrival</option>
+            <option value="e_visa">e-Visa</option>
+            <option value="required">Visa Required</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Max Stay (days)</label>
+          <input type="number" id="route-max-stay" min="0" placeholder="e.g. 90 (visa-free only)">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Visa Cost</label>
+          <input type="number" id="route-cost" step="0.01" min="0" placeholder="e.g. 160.00">
+        </div>
+        <div class="form-group" style="max-width:120px;">
+          <label>Currency</label>
+          <input type="text" id="route-currency" maxlength="3" placeholder="USD" value="USD">
+        </div>
+        <button class="btn btn-save"   onclick="saveRoute()">Save Route</button>
+        <button class="btn btn-danger" onclick="deleteRoute()">Delete Route</button>
+      </div>
+
+      <div id="route-msg" class="msg" style="margin-top:14px;"></div>
+      <p style="font-size:.75rem;color:var(--slate);margin-top:8px;">
+        💡 Saving runs an explicit <code>START TRANSACTION</code> at <code>READ COMMITTED</code> with two
+        advanced queries (subquery + JOIN/GROUP BY); UPDATEs fire the
+        <code>trg_visa_req_audit</code> trigger.
+      </p>
+    </div>
+  </div>
+
+  <!-- ─── Stored Procedure Runner ──────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">📦 Stored Procedure: <code>sp_passport_summary</code></div>
+    <p style="font-size:.85rem;color:var(--slate);margin-bottom:12px;">
+      Runs <code>sp_passport_summary(uid)</code> — two advanced queries
+      inside (JOIN + GROUP BY + conditional aggregation, and a correlated
+      subquery), with an <code>IF</code> control structure.
+    </p>
+    <div class="form-row" style="align-items:flex-end;">
+      <div class="form-group">
+        <label>User ID</label>
+        <input type="text" id="sp-user-id" placeholder="leave blank for current user">
+      </div>
+      <button class="btn btn-primary" onclick="runStoredProc()">Run Procedure</button>
+    </div>
+    <div id="sp-result" style="margin-top:14px;font-size:.85rem;"></div>
+  </div>
+
+  <!-- ─── Trigger Output (route_audit) ─────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">🛎 Trigger Output: <code>route_audit</code></div>
+    <p style="font-size:.85rem;color:var(--slate);margin-bottom:12px;">
+      Rows written by <code>trg_visa_req_audit</code> whenever a visa route
+      is updated (the trigger fires automatically from inside the route-edit
+      transaction above).
+    </p>
+    <button class="btn btn-secondary" onclick="loadAudit()">Refresh Audit Log</button>
+    <div id="audit-result" style="margin-top:14px;font-size:.85rem;"></div>
+  </div>
+</div>
+
+<script>
+function showMsg(id, text, isError) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = `msg ${isError ? 'error' : 'success'}`;
+  setTimeout(() => el.className = 'msg', 4000);
+}
+
+async function createUser() {
+  const userId   = document.getElementById('new-user-id').value.trim();
+  const email    = document.getElementById('new-email').value.trim();
+  const password = document.getElementById('new-password').value;
+  if (!userId || !email || !password) { showMsg('create-msg', 'All fields are required.', true); return; }
+  const res  = await fetch('/api/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({user_id:userId, email, password}) });
+  const data = await res.json();
+  if (res.ok) {
+    showMsg('create-msg', `User "${userId}" created successfully.`, false);
+    document.getElementById('new-user-id').value = '';
+    document.getElementById('new-email').value   = '';
+    document.getElementById('new-password').value = '';
+    searchUsers();
+  } else { showMsg('create-msg', data.error, true); }
+}
+
+async function searchUsers() {
+  const q   = document.getElementById('search-input').value.trim();
+  const res = await fetch(`/api/users?search=${encodeURIComponent(q)}&limit=25`);
+  const users = await res.json();
+  const tbody = document.getElementById('users-tbody');
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--slate);padding:24px;">No users found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = users.map(u => `
+    <tr id="row-${u.user_id}">
+      <td><code style="font-size:.875rem;">${u.user_id}</code></td>
+      <td>
+        <div class="editable-email">
+          <span class="email-display">${u.email}</span>
+          <input class="email-input" type="email" value="${u.email}">
+        </div>
+      </td>
+      <td style="color:var(--slate);">${u.created_at || '—'}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-secondary btn-sm edit-btn"  onclick="startEdit('${u.user_id}')">Edit</button>
+          <button class="btn btn-save      btn-sm save-btn"  onclick="saveEdit('${u.user_id}')" style="display:none;">Save</button>
+          <button class="btn btn-danger    btn-sm"           onclick="deleteUser('${u.user_id}')">Delete</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  searchUsers();
+}
+
+function startEdit(userId) {
+  const row = document.getElementById('row-' + userId);
+  row.querySelector('.email-display').style.display = 'none';
+  row.querySelector('.email-input').style.display   = 'block';
+  row.querySelector('.edit-btn').style.display      = 'none';
+  row.querySelector('.save-btn').style.display      = 'inline-flex';
+}
+
+async function saveEdit(userId) {
+  const row   = document.getElementById('row-' + userId);
+  const email = row.querySelector('.email-input').value.trim();
+  if (!email) { showMsg('action-msg', 'Email cannot be empty.', true); return; }
+  const res  = await fetch(`/api/users/${userId}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+  const data = await res.json();
+  if (res.ok) { showMsg('action-msg', `"${userId}" updated.`, false); searchUsers(); }
+  else        { showMsg('action-msg', data.error, true); }
+}
+
+async function deleteUser(userId) {
+  if (!confirm(`Delete user "${userId}"?`)) return;
+  const res  = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (res.ok) { showMsg('action-msg', `"${userId}" deleted.`, false); searchUsers(); }
+  else        { showMsg('action-msg', data.error, true); }
+}
+
+// ── Visa Route Editor ───────────────────────────────────────────────
+async function loadRouteCountries() {
+  const res  = await fetch('/api/countries');
+  const data = await res.json();
+  const html = '<option value="">— Select —</option>' +
+    data.map(c => `<option value="${c.country_id}">${c.country_name} (${c.country_id})</option>`).join('');
+  document.getElementById('route-origin').innerHTML      = html;
+  document.getElementById('route-destination').innerHTML = html;
+}
+
+function classifyRoute(r) {
+  if (r.max_stay_days != null) return 'visa_free';
+  if (r.visa_on_arrival)       return 'on_arrival';
+  if (r.is_evisa)              return 'e_visa';
+  return 'required';
+}
+
+async function loadRoute() {
+  const origin = document.getElementById('route-origin').value;
+  const dest   = document.getElementById('route-destination').value;
+  const status = document.getElementById('route-status');
+  const editor = document.getElementById('route-editor');
+  if (!origin || !dest) { status.textContent = 'Pick both an origin and a destination.'; editor.style.display = 'none'; return; }
+  if (origin === dest)   { status.textContent = 'Origin and destination must differ.'; editor.style.display = 'none'; return; }
+
+  status.textContent = 'Loading route…';
+  const res  = await fetch(`/api/admin/route?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}`);
+  const data = await res.json();
+  if (!res.ok) {
+    status.innerHTML = `<span style="color:var(--red);">⚠ ${data.error}</span> · You can still create a new route below.`;
+    // Pre-fill an empty editor so admin can create the route
+    document.getElementById('route-heading').textContent = `New route: ${origin} → ${dest}`;
+    document.getElementById('route-type').value          = 'required';
+    document.getElementById('route-max-stay').value      = '';
+    document.getElementById('route-cost').value          = '';
+    document.getElementById('route-currency').value      = 'USD';
+    editor.dataset.origin = origin;
+    editor.dataset.destination = dest;
+    editor.style.display = 'block';
+    return;
+  }
+
+  status.textContent = `Route loaded · last updated ${data.last_updated || '—'}`;
+  document.getElementById('route-heading').innerHTML =
+    `Editing: <strong>${data.origin_country}</strong> → <strong>${data.destination_country}</strong>`;
+  document.getElementById('route-type').value     = classifyRoute(data);
+  document.getElementById('route-max-stay').value = data.max_stay_days ?? '';
+  document.getElementById('route-cost').value     = data.cost_amount   ?? '';
+  document.getElementById('route-currency').value = data.currency_code || 'USD';
+  editor.dataset.origin      = data.origin_id;
+  editor.dataset.destination = data.destination_id;
+  editor.style.display       = 'block';
+  document.getElementById('route-msg').className = 'msg';
+}
+
+async function saveRoute() {
+  const editor = document.getElementById('route-editor');
+  const origin = editor.dataset.origin;
+  const dest   = editor.dataset.destination;
+  const type   = document.getElementById('route-type').value;
+  const maxStayRaw = document.getElementById('route-max-stay').value.trim();
+  const costRaw    = document.getElementById('route-cost').value.trim();
+  const currency   = (document.getElementById('route-currency').value || 'USD').trim().toUpperCase();
+  const msg = document.getElementById('route-msg');
+
+  // Derive booleans / max_stay from the chosen type
+  const is_evisa        = (type === 'e_visa')     ? 1 : 0;
+  const visa_on_arrival = (type === 'on_arrival') ? 1 : 0;
+  let max_stay_days = null;
+  if (type === 'visa_free') {
+    if (!maxStayRaw) { msg.textContent = 'Visa-free routes require a max-stay value.'; msg.className = 'msg error'; return; }
+    max_stay_days = parseInt(maxStayRaw, 10);
+  } else if (maxStayRaw) {
+    // Non-visa-free routes: ignore max-stay (DB convention says NULL = needs visa)
+    max_stay_days = null;
+  }
+
+  // Visa-free routes never carry a fee
+  let cost_amount = null;
+  if (type !== 'visa_free' && costRaw) cost_amount = parseFloat(costRaw);
+
+  const res = await fetch('/api/admin/route', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      origin, destination: dest,
+      is_evisa, visa_on_arrival,
+      max_stay_days, cost_amount, currency_code: currency
+    })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    msg.textContent = '✅ Route saved.';
+    msg.className = 'msg success';
+    setTimeout(loadRoute, 600);
+  } else {
+    msg.textContent = data.error;
+    msg.className = 'msg error';
+  }
+}
+
+async function deleteRoute() {
+  const editor = document.getElementById('route-editor');
+  const origin = editor.dataset.origin;
+  const dest   = editor.dataset.destination;
+  const msg    = document.getElementById('route-msg');
+  if (!origin || !dest) return;
+  if (!confirm(`Delete the route ${origin} → ${dest}? This removes the visa requirement and any associated cost.`)) return;
+
+  const res  = await fetch(`/api/admin/route?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (res.ok) {
+    msg.textContent = '🗑 Route deleted.';
+    msg.className   = 'msg success';
+    editor.style.display = 'none';
+    document.getElementById('route-status').textContent = 'Route deleted. Pick another pair to look up.';
+  } else {
+    msg.textContent = data.error;
+    msg.className   = 'msg error';
+  }
+}
+
+// ── Stored Procedure runner ─────────────────────────────────────────
+async function runStoredProc() {
+  const userId = document.getElementById('sp-user-id').value.trim();
+  const out    = document.getElementById('sp-result');
+  out.innerHTML = '<em style="color:var(--slate);">Calling sp_passport_summary…</em>';
+
+  const res  = await fetch('/api/admin/passport-summary', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ user_id: userId })
+  });
+  const data = await res.json();
+  if (!res.ok) { out.innerHTML = `<span style="color:var(--red);">⚠ ${data.error}</span>`; return; }
+
+  if (data.regional[0] && data.regional[0].status === 'no_passport') {
+    out.innerHTML = `<span style="color:var(--red);">No passport on file for "${data.user_id}".</span>`;
+    return;
+  }
+
+  const reg = data.regional || [];
+  const cheap = data.cheapest || [];
+  let html = `<p style="margin-bottom:8px;color:var(--slate);">Result for <code>${data.user_id}</code></p>`;
+  html += `<div style="font-weight:600;margin-bottom:4px;">Result set #1 — Regional summary (${reg.length} rows)</div>`;
+  if (reg.length) {
+    html += `<table><thead><tr><th>Region</th><th>Total</th><th>Visa-Free</th><th>e-Visa</th><th>Avg Stay</th></tr></thead><tbody>` +
+      reg.map(r => `<tr><td>${r.region_name || '—'}</td><td>${r.total_destinations}</td><td>${r.visa_free_count}</td><td>${r.evisa_count}</td><td>${r.avg_max_stay ?? '—'}</td></tr>`).join('') +
+      `</tbody></table>`;
+  } else { html += '<p class="empty">No rows.</p>'; }
+
+  html += `<div style="font-weight:600;margin:14px 0 4px;">Result set #2 — Cheapest destination per region (${cheap.length} rows)</div>`;
+  if (cheap.length) {
+    html += `<table><thead><tr><th>Destination</th><th>Region</th><th>Cost</th></tr></thead><tbody>` +
+      cheap.map(r => `<tr><td>${r.destination}</td><td>${r.region_name}</td><td>$${parseFloat(r.cost_amount).toFixed(2)}</td></tr>`).join('') +
+      `</tbody></table>`;
+  } else { html += '<p class="empty">No paid-route cost data for this passport.</p>'; }
+
+  out.innerHTML = html;
+}
+
+// ── Trigger audit log viewer ────────────────────────────────────────
+async function loadAudit() {
+  const out = document.getElementById('audit-result');
+  out.innerHTML = '<em style="color:var(--slate);">Loading…</em>';
+  const res  = await fetch('/api/admin/route-audit?limit=25');
+  const rows = await res.json();
+  if (!Array.isArray(rows)) { out.innerHTML = `<span style="color:var(--red);">⚠ ${rows.error}</span>`; return; }
+  if (!rows.length) { out.innerHTML = '<span style="color:var(--slate);">No audit rows yet — edit a route via "Save Route" to trigger one.</span>'; return; }
+  const fmtBool = v => v == null ? '—' : (v ? 'yes' : 'no');
+  out.innerHTML = `<table><thead><tr>
+      <th>When</th><th>Route</th>
+      <th>e-Visa (old → new)</th>
+      <th>On Arrival (old → new)</th>
+      <th>Max Stay (old → new)</th>
+    </tr></thead><tbody>` +
+    rows.map(r => `<tr>
+      <td style="color:var(--slate);">${r.changed_at}</td>
+      <td><strong>${r.origin_name}</strong> → <strong>${r.destination_name}</strong></td>
+      <td>${fmtBool(r.old_is_evisa)} → ${fmtBool(r.new_is_evisa)}</td>
+      <td>${fmtBool(r.old_visa_on_arrival)} → ${fmtBool(r.new_visa_on_arrival)}</td>
+      <td>${r.old_max_stay_days ?? '—'} → ${r.new_max_stay_days ?? '—'}</td>
+    </tr>`).join('') + `</tbody></table>`;
+}
+
+loadRouteCountries();
+loadAudit();
+</script>
+</body>
+</html>
