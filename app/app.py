@@ -8,18 +8,25 @@ import mysql.connector
 from mysql.connector import Error
 import hashlib
 import random
+import os
 from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'gonogo-cs411-secret-2026'
 
+INSTANCE_CONNECTION_NAME = os.environ.get("INSTANCE_CONNECTION_NAME")
+
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'root',          # update if your MySQL password differs
-    'database': 'gonogo',
-    'port': 3306
+    "user": os.environ.get("DB_USER", "root"),
+    "password": os.environ.get("DB_PASS", ""),
+    "database": os.environ.get("DB_NAME", "gonogo"),
 }
+
+if INSTANCE_CONNECTION_NAME:
+    DB_CONFIG["unix_socket"] = f"/cloudsql/{INSTANCE_CONNECTION_NAME}"
+else:
+    DB_CONFIG["host"] = os.environ.get("DB_HOST", "localhost")
+    DB_CONFIG["port"] = int(os.environ.get("DB_PORT", 3306))
 
 DEVELOPERS = {'jenys2', 'johnw14', 'zhiyunl3', 'akshay11'}
 
