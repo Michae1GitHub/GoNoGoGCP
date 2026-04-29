@@ -19,8 +19,8 @@
 |   Info      |        Description     |
 | ----------- | ---------------------- |
 |  Title      |       GoNoGo           |
-| System URL  |      link_to_system    |
-| Video Link  |      link_to_video     |
+| System URL  |    [  link_to_system ](https://gonogo-513554228020.us-east4.run.app)   |
+| Video Link  |    [  link_to_video  ](https://mediaspace.illinois.edu/media/t/1_xqan8ac4)   |
 
 
 ## Project Summary:
