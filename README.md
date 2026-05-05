@@ -42,7 +42,7 @@ visa-route data.
 
 ---
 
-## Quick start (grader instructions)
+## Quick start (Local App Installation)
 
 ### 1. Database
 
