@@ -5,12 +5,12 @@
 | ----------- | ---------------------- |
 | TeamID      |        Team-046        |
 | TeamName    |      lateBloomers      |
-| Captain     |  Jeny Sheng            |
-| Captain     |  jenys2@illinois.edu   |
+| Captain     |  Zhiyun Liu            |
+| Captain     |  zhiyunl3@illinois.edu |
 | Member1     |  John Wang             |
 | Member1     |  johnw14@illinois.edu  |
-| Member2     |  Zhiyun Liu            |
-| Member2     |  zhiyunl3@illinois.edu |
+| Member2     |  Jeny Sheng            |
+| Member2     |  jenys2@illinois.edu   |
 | Member3     |  Akshay Akhileshwaran  |
 | Member3     |  akshay11@illinois.edu |
 
