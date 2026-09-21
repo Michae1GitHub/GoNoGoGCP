@@ -1,7 +1,7 @@
 # GoNoGo
 Developer: Zhiyun Liu, Akshay Akhileshwaran, Jeny Sheng, John Wang
 
-Public Application Website: https://gonogo-513554228020.us-east4.run.app  Hosted via Google Cloud
+Public Application Website: https://gonogo-ffw2zk5zhq-uk.a.run.app/  Hosted via Google Cloud
 
 A visa-requirement lookup and travel-planning app. Pick your passport
 country, look up visa requirements for any destination, save trips,
